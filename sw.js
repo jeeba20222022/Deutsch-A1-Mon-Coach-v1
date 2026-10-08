@@ -1,0 +1,6 @@
+const CACHE='deutsch-a1-v1.1.0';
+const FILES=['./','./index.html','./style.css','./content.js','./app.js','./reader.js','./manifest.webmanifest','./icon.svg','./icon-192.png','./icon-512.png'];
+self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('deutsch-a1-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;if(new URL(e.request.url).pathname.includes('/pages/')){e.respondWith(caches.open('deutsch-manual-pages-v1').then(async c=>{const hit=await c.match(e.request);if(hit)return hit;const r=await fetch(e.request);if(r.ok)await c.put(e.request,r.clone());return r}).catch(()=>Response.error()));return;}e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request).catch(()=>e.request.mode==='navigate'?caches.match('./index.html'):Response.error())))});
+self.addEventListener('message',e=>{if(e.data==='CACHE_READY')e.waitUntil(caches.open(CACHE).then(c=>c.match('./index.html')).then(hit=>e.ports[0]?.postMessage(!!hit)))});
